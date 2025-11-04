@@ -1,0 +1,256 @@
+﻿
+// MyLightDlg.cpp: 구현 파일
+//
+
+#include "pch.h"
+#include "framework.h"
+#include "MyLight.h"
+#include "MyLightDlg.h"
+#include "afxdialogex.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
+#define SLIDER_MAX	(100)
+#define SHINE_SLIDER_MAX (128)
+
+// 문자열을 float형으로 변환하는 함수(비어있다면 기본값 반환)
+static float ParseCString(const CString& strValue, GLfloat fDef)
+{
+	if (strValue.IsEmpty()) return fDef;
+
+	return static_cast<GLfloat>(_tstof(strValue));
+}
+
+
+// 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
+
+class CAboutDlg : public CDialogEx
+{
+public:
+	CAboutDlg();
+
+	// 대화 상자 데이터입니다.
+#ifdef AFX_DESIGN_TIME
+	enum { IDD = IDD_ABOUTBOX };
+#endif
+
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
+
+	// 구현입니다.
+protected:
+	DECLARE_MESSAGE_MAP()
+public:
+};
+
+CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
+{
+}
+
+void CAboutDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+}
+
+BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+END_MESSAGE_MAP()
+
+
+// CMyLightDlg 대화 상자
+
+
+
+CMyLightDlg::CMyLightDlg(CWnd* pParent /*=nullptr*/)
+	: CDialogEx(IDD_MYLIGHT_DIALOG, pParent)
+	, m_strLightPosX(_T(""))
+	, m_strLightPosY(_T(""))
+	, m_strLightPosZ(_T(""))
+	, m_checkDirectional(FALSE)
+{
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+}
+
+void CMyLightDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_MFCCOLORBUTTON1, m_btBackColor);
+	DDX_Control(pDX, IDC_MFCCOLORBUTTON2, m_btSphereColor);
+	DDX_Control(pDX, IDC_SLIDER_SPH_COL, m_slSphereColor);
+	DDX_Control(pDX, IDC_MFCCOLORBUTTON3, m_btLightAmbient);
+	DDX_Control(pDX, IDC_MFCCOLORBUTTON4, m_btLightDiffuse);
+	DDX_Control(pDX, IDC_MFCCOLORBUTTON5, m_btLightSpecular);
+	DDX_Text(pDX, IDC_EDIT_LIGHT_X, m_strLightPosX);
+	DDX_Text(pDX, IDC_EDIT_LIGHT_Y, m_strLightPosY);
+	DDX_Text(pDX, IDC_EDIT_LIGHT_Z, m_strLightPosZ);
+	DDX_Check(pDX, IDC_CHECK_DIRECTIONAL, m_checkDirectional);
+	DDX_Control(pDX, IDC_EMIT, m_btEmission);
+	DDX_Control(pDX, IDC_SLIDER_SHINE, m_sliderShine);
+}
+
+BEGIN_MESSAGE_MAP(CMyLightDlg, CDialogEx)
+	ON_WM_SYSCOMMAND()
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_BUTTON1, &CMyLightDlg::OnBnClickedButton1)
+	ON_WM_HSCROLL()
+END_MESSAGE_MAP()
+
+
+// CMyLightDlg 메시지 처리기
+
+BOOL CMyLightDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// 시스템 메뉴에 "정보..." 메뉴 항목을 추가합니다.
+
+	// IDM_ABOUTBOX는 시스템 명령 범위에 있어야 합니다.
+	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
+	ASSERT(IDM_ABOUTBOX < 0xF000);
+
+	CMenu* pSysMenu = GetSystemMenu(FALSE);
+	if (pSysMenu != nullptr)
+	{
+		BOOL bNameValid;
+		CString strAboutMenu;
+		bNameValid = strAboutMenu.LoadString(IDS_ABOUTBOX);
+		ASSERT(bNameValid);
+		if (!strAboutMenu.IsEmpty())
+		{
+			pSysMenu->AppendMenu(MF_SEPARATOR);
+			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+		}
+	}
+
+	// 이 대화 상자의 아이콘을 설정합니다.  응용 프로그램의 주 창이 대화 상자가 아닐 경우에는
+	//  프레임워크가 이 작업을 자동으로 수행합니다.
+	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
+	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
+
+	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	m_screen.Create(IDC_SCREEN, this);
+	m_btBackColor.SetColor(DEF_BACK_COLOR);
+	m_btSphereColor.SetColor(DEF_SPHERE_COLOR);
+
+	m_slSphereColor.SetRange(0, SLIDER_MAX);
+	m_slSphereColor.SetPos(SLIDER_MAX);
+
+	m_btLightAmbient.SetColor(DEF_LIGHT_AMBIENT);
+	m_btLightDiffuse.SetColor(DEF_LIGHT_DIFFUSE);
+	m_btLightSpecular.SetColor(DEF_LIGHT_SPECULAR);
+
+	m_strLightPosX = _T("1.0");
+	m_strLightPosY = _T("1.0");
+	m_strLightPosZ = _T("1.0");
+	m_checkDirectional = TRUE;
+	
+	m_btEmission.SetColor(DEF_EMIT);
+	m_sliderShine.SetRange(0, SHINE_SLIDER_MAX);
+	m_sliderShine.SetTicFreq(16); //눈금 간격
+	m_sliderShine.SetPos(SHINE_SLIDER_MAX);
+
+	UpdateData(FALSE);
+	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
+}
+
+void CMyLightDlg::OnSysCommand(UINT nID, LPARAM lParam)
+{
+	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+	{
+		CAboutDlg dlgAbout;
+		dlgAbout.DoModal();
+	}
+	else
+	{
+		CDialogEx::OnSysCommand(nID, lParam);
+	}
+}
+
+// 대화 상자에 최소화 단추를 추가할 경우 아이콘을 그리려면
+//  아래 코드가 필요합니다.  문서/뷰 모델을 사용하는 MFC 애플리케이션의 경우에는
+//  프레임워크에서 이 작업을 자동으로 수행합니다.
+
+void CMyLightDlg::OnPaint()
+{
+	if (IsIconic())
+	{
+		CPaintDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
+
+		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
+
+		// 클라이언트 사각형에서 아이콘을 가운데에 맞춥니다.
+		int cxIcon = GetSystemMetrics(SM_CXICON);
+		int cyIcon = GetSystemMetrics(SM_CYICON);
+		CRect rect;
+		GetClientRect(&rect);
+		int x = (rect.Width() - cxIcon + 1) / 2;
+		int y = (rect.Height() - cyIcon + 1) / 2;
+
+		// 아이콘을 그립니다.
+		dc.DrawIcon(x, y, m_hIcon);
+	}
+	else
+	{
+		CDialogEx::OnPaint();
+	}
+}
+
+// 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서
+//  이 함수를 호출합니다.
+HCURSOR CMyLightDlg::OnQueryDragIcon()
+{
+	return static_cast<HCURSOR>(m_hIcon);
+}
+
+// 그리기
+void CMyLightDlg::OnBnClickedButton1()
+{
+	UpdateData(TRUE);
+
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_screen.m_nBackColor = m_btBackColor.GetColor();
+	m_screen.m_nSphereColor = m_btSphereColor.GetColor();
+	m_screen.SetLightAmbient(m_btLightAmbient.GetColor());
+	m_screen.SetLightDiffuse(m_btLightDiffuse.GetColor());
+	m_screen.SetLightSpecular(m_btLightSpecular.GetColor());
+
+	GLfloat fLightX = ParseCString(m_strLightPosX, 1.0f);
+	GLfloat fLightY = ParseCString(m_strLightPosY, 1.0f);
+	GLfloat fLightZ = ParseCString(m_strLightPosZ, 1.0f);
+	bool checkDir = (m_checkDirectional != FALSE);
+
+	m_screen.SetLightPosition(fLightX, fLightY, fLightZ, checkDir);
+	m_screen.SetMaterialEmission(m_btEmission.GetColor());
+	m_screen.SetMaterialShininess(static_cast<GLfloat>(m_sliderShine.GetPos()));
+
+	m_screen.Invalidate(FALSE);
+}
+void CMyLightDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	//pScrollBar->GetDlgCtrlID() == IDC_SLIDER_SPH_COL
+	if (pScrollBar)
+	{
+		const UINT id = pScrollBar->GetDlgCtrlID();
+
+		//광택 슬라이더
+		if (id == IDC_SLIDER_SHINE)
+		{
+			int nShine = m_sliderShine.GetPos();
+			GLfloat fShine = static_cast<GLfloat>(nShine);
+
+			m_screen.SetMaterialShininess(fShine);
+			m_screen.Invalidate(FALSE);
+		}
+		else if (id == IDC_SLIDER_SPH_COL)
+		{
+			int nPos = m_slSphereColor.GetPos();
+			GLfloat alpha = nPos / float(SLIDER_MAX);
+			m_screen.m_sphereAlpha = alpha;
+			m_screen.Invalidate(FALSE);
+		}
+	}
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
+}
