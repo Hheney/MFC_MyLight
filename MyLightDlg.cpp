@@ -137,18 +137,20 @@ BOOL CMyLightDlg::OnInitDialog()
 	m_slSphereColor.SetRange(0, SLIDER_MAX);
 	m_slSphereColor.SetPos(SLIDER_MAX);
 
+	//주변광, 확산광, 직사광 초기화
 	m_btLightAmbient.SetColor(DEF_LIGHT_AMBIENT);
 	m_btLightDiffuse.SetColor(DEF_LIGHT_DIFFUSE);
 	m_btLightSpecular.SetColor(DEF_LIGHT_SPECULAR);
 
+	//광원 위치 초기화
 	m_strLightPosX = _T("1.0");
 	m_strLightPosY = _T("1.0");
 	m_strLightPosZ = _T("1.0");
 	m_checkDirectional = TRUE;
 	
+	//방사, 광택 초기화
 	m_btEmission.SetColor(DEF_EMIT);
 	m_sliderShine.SetRange(0, SHINE_SLIDER_MAX);
-	m_sliderShine.SetTicFreq(16); //눈금 간격
 	m_sliderShine.SetPos(SHINE_SLIDER_MAX);
 
 	UpdateData(FALSE);

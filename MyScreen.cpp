@@ -30,7 +30,11 @@ void MyScreen::SetLightAmbient(COLORREF col)
 	m_lightAmbient[0] = r;
 	m_lightAmbient[1] = g;
 	m_lightAmbient[2] = b;
+
+	StartRC();
 	glLightfv(GL_LIGHT0, GL_AMBIENT, m_lightAmbient);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, m_lightAmbient);
+	StopRC();
 }
 
 void MyScreen::SetLightDiffuse(COLORREF col)
@@ -40,7 +44,10 @@ void MyScreen::SetLightDiffuse(COLORREF col)
 	m_lightDiffuse[0] = r;
 	m_lightDiffuse[1] = g;
 	m_lightDiffuse[2] = b;
+	StartRC();
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, m_lightDiffuse);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, m_lightDiffuse);
+	StopRC();
 }
 
 void MyScreen::SetLightSpecular(COLORREF col)
@@ -50,7 +57,11 @@ void MyScreen::SetLightSpecular(COLORREF col)
 	m_lightSpecular[0] = r;
 	m_lightSpecular[1] = g;
 	m_lightSpecular[2] = b;
+
+	StartRC();
 	glLightfv(GL_LIGHT0, GL_SPECULAR, m_lightSpecular);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, m_lightSpecular);
+	StopRC();
 }
 
 void MyScreen::SetLightPosition(GLfloat x, GLfloat y, GLfloat z, bool checkDirectional)
@@ -70,7 +81,9 @@ void MyScreen::SetMaterialEmission(COLORREF col)
 	m_mtlEmit[2] = b;
 	m_mtlEmit[3] = 1.0f;
 	
+	StartRC();
 	glMaterialfv(GL_FRONT, GL_EMISSION, m_mtlEmit);
+	StopRC();
 }
 
 void MyScreen::SetMaterialShininess(GLfloat shine)
@@ -79,7 +92,9 @@ void MyScreen::SetMaterialShininess(GLfloat shine)
 	if (shine > 128.f) shine = 128.f;
 	m_mtlShine = shine;
 	
+	StartRC();
 	glMaterialf(GL_FRONT, GL_SHININESS, m_mtlShine);
+	StopRC();
 }
 
 void MyScreen::SetLightParam(void)
@@ -151,7 +166,15 @@ void MyScreen::RenderScene(void)
 
 	glPushMatrix();
 	glLoadIdentity();
-	glLightfv(GL_LIGHT0, GL_POSITION, m_lightPos); //현재 광원 위치 적용
+
+	glLightfv(GL_LIGHT0, GL_POSITION, m_lightPos);		//현재 광원 위치 적용
+	//glLightfv(GL_LIGHT0, GL_AMBIENT, m_lightAmbient);	//주변광 적용
+	//glLightfv(GL_LIGHT0, GL_DIFFUSE, m_lightDiffuse);	//확산광 적용
+	//glLightfv(GL_LIGHT0, GL_SPECULAR, m_lightSpecular);	//직사광 적용
+
+	//glMaterialfv(GL_FRONT, GL_EMISSION, m_mtlEmit);		//방사 적용
+	//glMaterialf(GL_FRONT, GL_SHININESS, m_mtlShine);	//광택 적용
+	
 	glRotatef(m_ang, 0.f, 1.f, 0.f); //회전
 
 	// 구 그리기
